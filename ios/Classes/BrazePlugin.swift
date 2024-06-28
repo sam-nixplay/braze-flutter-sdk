@@ -2,6 +2,12 @@ import BrazeKit
 import BrazeUI
 import Flutter
 
+#if os(iOS)
+import UIKit
+#elseif os(tvOS)
+import TVUIKit
+#endif
+
 /// Stores all channels, including ones across different BrazePlugin instances
 var channels = [FlutterMethodChannel]()
 
@@ -58,6 +64,7 @@ public class BrazePlugin: NSObject, FlutterPlugin, BrazeSDKAuthDelegate {
     case "requestContentCardsRefresh":
       BrazePlugin.braze?.contentCards.requestRefresh { _ in }
 
+    #if os(iOS)
     case "launchContentCards":
       guard let braze = BrazePlugin.braze,
         let mainViewController = UIApplication.shared.keyWindow?.rootViewController
@@ -65,6 +72,7 @@ public class BrazePlugin: NSObject, FlutterPlugin, BrazeSDKAuthDelegate {
       let modalViewController = BrazeContentCardUI.ModalViewController(braze: braze)
       modalViewController.navigationItem.title = "Content Cards"
       mainViewController.present(modalViewController, animated: true)
+    #endif
 
     case "logContentCardClicked":
       guard let args = call.arguments as? [String: Any],
@@ -362,8 +370,7 @@ public class BrazePlugin: NSObject, FlutterPlugin, BrazeSDKAuthDelegate {
         let key = args["key"] as? String,
         let value = args["value"] as? NSNumber
       else {
-        print("Invalid args: \(argsDescription), iOS method: \(call.method)")
-        return
+        print("Invalid args: \(args)")
       }
       let date = Date.init(timeIntervalSince1970: value.doubleValue)
       BrazePlugin.braze?.user.setCustomAttribute(key: key, value: date)
@@ -499,6 +506,7 @@ public class BrazePlugin: NSObject, FlutterPlugin, BrazeSDKAuthDelegate {
     case "requestLocationInitialization":
       break  // This is an Android only feature, do nothing.
 
+    #if os(iOS)
     case "setLastKnownLocation":
       guard let args = call.arguments as? [String: Any],
         let latitude = args["latitude"] as? Double,
@@ -526,6 +534,7 @@ public class BrazePlugin: NSObject, FlutterPlugin, BrazeSDKAuthDelegate {
           horizontalAccuracy: accuracy
         )
       }
+    #endif
 
     case "enableSDK":
       BrazePlugin.braze?.enabled = true
@@ -753,6 +762,7 @@ public class BrazePlugin: NSObject, FlutterPlugin, BrazeSDKAuthDelegate {
        let imageUrl = att["url"] as? String {
       pushEventJson["image_url"] = imageUrl
     }
+    #endif
 
     return pushEventJson
   }
@@ -828,7 +838,7 @@ public class BrazePlugin: NSObject, FlutterPlugin, BrazeSDKAuthDelegate {
 
     // Re-serialize the updated JSON
     var options: JSONSerialization.WritingOptions = [.sortedKeys]
-    if #available(iOS 13.0, *) {
+    if #available(iOS 13.0, tvOS 13.0, *) {
       options.insert(.withoutEscapingSlashes)
     }
     guard let updatedJsonData = try? JSONSerialization.data(withJSONObject: pushEventJson, options: options),
@@ -891,5 +901,4 @@ public class BrazePlugin: NSObject, FlutterPlugin, BrazeSDKAuthDelegate {
       print(error.localizedDescription)
     }
   }
-
 }
