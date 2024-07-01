@@ -368,11 +368,6 @@ public class BrazePlugin: NSObject, FlutterPlugin, BrazeSDKAuthDelegate {
     case "setDateCustomUserAttribute":
       guard let args = call.arguments as? [String: Any],
         let key = args["key"] as? String,
-        let value = args
-
-    case "setDateCustomUserAttribute":
-      guard let args = call.arguments as? [String: Any],
-        let key = args["key"] as? String,
         let value = args["value"] as? NSNumber
       else {
         print("Invalid args: \(argsDescription), iOS method: \(call.method)")
