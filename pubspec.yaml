@@ -24,6 +24,8 @@ flutter:
         pluginClass: BrazePlugin
       ios:
         pluginClass: BrazePlugin
+      tvos:
+        pluginClass: BrazePlugin  
 
 # Ignore warnings in the example app during package upload
 false_secrets:

@@ -368,11 +368,17 @@ public class BrazePlugin: NSObject, FlutterPlugin, BrazeSDKAuthDelegate {
     case "setDateCustomUserAttribute":
       guard let args = call.arguments as? [String: Any],
         let key = args["key"] as? String,
+        let value = args
+
+    case "setDateCustomUserAttribute":
+      guard let args = call.arguments as? [String: Any],
+        let key = args["key"] as? String,
         let value = args["value"] as? NSNumber
       else {
-        print("Invalid args: \(args)")
+        print("Invalid args: \(argsDescription), iOS method: \(call.method)")
+        return
       }
-      let date = Date.init(timeIntervalSince1970: value.doubleValue)
+      let date = Date(timeIntervalSince1970: value.doubleValue)
       BrazePlugin.braze?.user.setCustomAttribute(key: key, value: date)
 
     case "setLocationCustomAttribute":
@@ -630,7 +636,7 @@ public class BrazePlugin: NSObject, FlutterPlugin, BrazeSDKAuthDelegate {
     guard let inAppMessageRaw = inAppMessageRaw else { return nil }
 
     do {
-      let inAppMessage: Braze.InAppMessage = try Braze.InAppMessage.init(inAppMessageRaw)
+      let inAppMessage: Braze.InAppMessage = try Braze.InAppMessage(inAppMessageRaw)
       return inAppMessage
     } catch {
       print("Error parsing in-app message from jsonString: \(jsonString), error: \(error)")
@@ -643,7 +649,7 @@ public class BrazePlugin: NSObject, FlutterPlugin, BrazeSDKAuthDelegate {
     guard let contentCardRaw = contentCardRaw else { return nil }
 
     do {
-      let contentCard: Braze.ContentCard = try Braze.ContentCard.init(contentCardRaw)
+      let contentCard: Braze.ContentCard = try Braze.ContentCard(contentCardRaw)
       return contentCard
     } catch {
       print("Error parsing Content Card from jsonString: \(jsonString), error: \(error)")
@@ -735,28 +741,18 @@ public class BrazePlugin: NSObject, FlutterPlugin, BrazeSDKAuthDelegate {
     }
   }
 
-  /// Modifies the Swift SDK's push payload to match Android push payloads
-  /// and the expected payload in Dart.
-  ///
-  /// - Parameter originalJson: The unedited push event JSON.
-  /// - Parameter pushEvent: The Braze push notification event in native Swift.
-  /// - Returns: The push event JSON after updating some fields.
   private class func updatePushEventJson(_ originalJson: [String : Any], pushEvent: Braze.Notifications.Payload) -> [String : Any] {
     var pushEventJson = originalJson
 
-    // - Use the `"push_` prefix for consistency with Android. The Swift SDK internally uses `"opened"`.
     if (pushEventJson["payload_type"] as? String == "opened") {
       pushEventJson["payload_type"] = "push_opened"
     }
 
-    // - Map the value with the key name "summary_text"
     pushEventJson["summary_text"] = pushEvent.subtitle
 
-    // - Ensure the timestamp is an Int instead of a Double
     pushEventJson["timestamp"] = Int(pushEvent.date.timeIntervalSince1970)
 
-    // - If present, add the URL of the image attached to the notification.
-    //   This avoids the need to extract the field from UserInfo.
+    #if os(iOS)
     if let brazeUserInfo = pushEvent.userInfo["ab"] as? [String: Any],
        let att = brazeUserInfo["att"] as? [String: Any],
        let imageUrl = att["url"] as? String {
@@ -876,7 +872,7 @@ public class BrazePlugin: NSObject, FlutterPlugin, BrazeSDKAuthDelegate {
 
   // MARK: SDK Authentication
 
-  public func braze(
+  @objc public func braze(
     _ braze: BrazeKit.Braze,
     sdkAuthenticationFailedWithError error: BrazeKit.Braze.SDKAuthenticationError
   ) {
@@ -901,4 +897,4 @@ public class BrazePlugin: NSObject, FlutterPlugin, BrazeSDKAuthDelegate {
       print(error.localizedDescription)
     }
   }
-}
+}        
