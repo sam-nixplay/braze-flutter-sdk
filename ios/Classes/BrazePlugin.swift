@@ -1,9 +1,9 @@
 import BrazeKit
-import BrazeUI
 import Flutter
 
 #if os(iOS)
 import UIKit
+import BrazeUI
 #elseif os(tvOS)
 import TVUIKit
 #endif
